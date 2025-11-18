@@ -147,10 +147,10 @@ jobs:
           # Add your actual build commands here if needed
 
       # ==========================================
-      # UPLOAD ARTIFACTS
+      # UPLOAD ARTIFACTS (FIXED TO V4)
       # ==========================================
       - name: 📤 Upload All Security Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-reports-complete
           path: security-reports/
@@ -158,21 +158,21 @@ jobs:
         if: always()
 
       - name: 📤 Upload Bandit Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bandit-sast-report
           path: security-reports/bandit-report.*
         if: always()
 
       - name: 📤 Upload Semgrep Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: semgrep-sast-report
           path: security-reports/semgrep-report.*
         if: always()
 
       - name: 📤 Upload Safety Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: safety-sca-report
           path: security-reports/safety-report.*
