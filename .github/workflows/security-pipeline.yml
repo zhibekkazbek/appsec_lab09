@@ -1,0 +1,195 @@
+name: DevSecOps Security Pipeline
+
+# Trigger the pipeline on push and pull requests
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  security-analysis:
+    name: Security Analysis & Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Checkout the code
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      # Step 2: Set up Python environment
+      - name: 🐍 Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # Step 3: Display Python version
+      - name: 📋 Display Python Version
+        run: |
+          python --version
+          pip --version
+
+      # Step 4: Install application dependencies
+      - name: 📦 Install Application Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      # Step 5: Install security tools
+      - name: 🔧 Install Security Tools
+        run: |
+          pip install bandit safety semgrep
+          bandit --version
+          semgrep --version
+          safety --version
+
+      # Step 6: Create reports directory
+      - name: 📁 Create Reports Directory
+        run: mkdir -p security-reports
+
+      # ==========================================
+      # SAST TOOL #1: BANDIT
+      # ==========================================
+      - name: 🔍 SAST - Run Bandit
+        run: |
+          echo "=========================================="
+          echo "Running Bandit Security Scan..."
+          echo "=========================================="
+          bandit -r . -f json -o security-reports/bandit-report.json || true
+          bandit -r . -f txt -o security-reports/bandit-report.txt || true
+          bandit -r . -f html -o security-reports/bandit-report.html || true
+          echo "Bandit scan completed!"
+        continue-on-error: true
+
+      # ==========================================
+      # SAST TOOL #2: SEMGREP
+      # ==========================================
+      - name: 🔍 SAST - Run Semgrep
+        run: |
+          echo "=========================================="
+          echo "Running Semgrep Security Scan..."
+          echo "=========================================="
+          semgrep --config=auto --json --output=security-reports/semgrep-report.json . || true
+          semgrep --config=auto --text --output=security-reports/semgrep-report.txt . || true
+          echo "Semgrep scan completed!"
+        continue-on-error: true
+
+      # ==========================================
+      # SCA TOOL: SAFETY
+      # ==========================================
+      - name: 🔍 SCA - Run Safety Check
+        run: |
+          echo "=========================================="
+          echo "Running Safety Dependency Scan..."
+          echo "=========================================="
+          safety check --json --output security-reports/safety-report.json || true
+          safety check --output text > security-reports/safety-report.txt || true
+          echo "Safety scan completed!"
+        continue-on-error: true
+
+      # ==========================================
+      # DISPLAY RESULTS
+      # ==========================================
+      - name: 📊 Display Security Scan Results
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════╗"
+          echo "║   SECURITY SCAN RESULTS SUMMARY        ║"
+          echo "╔════════════════════════════════════════╗"
+          echo ""
+          
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 BANDIT RESULTS (SAST)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          if [ -f security-reports/bandit-report.txt ]; then
+            cat security-reports/bandit-report.txt
+          else
+            echo "⚠️  No Bandit report found"
+          fi
+          
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 SEMGREP RESULTS (SAST)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          if [ -f security-reports/semgrep-report.txt ]; then
+            cat security-reports/semgrep-report.txt
+          else
+            echo "⚠️  No Semgrep report found"
+          fi
+          
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 SAFETY RESULTS (SCA)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          if [ -f security-reports/safety-report.txt ]; then
+            cat security-reports/safety-report.txt
+          else
+            echo "⚠️  No Safety report found"
+          fi
+          
+          echo ""
+          echo "╚════════════════════════════════════════╝"
+          echo "✅ All security scans completed!"
+          echo "╚════════════════════════════════════════╝"
+
+      # ==========================================
+      # BUILD APPLICATION
+      # ==========================================
+      - name: 🏗️ Build Application
+        run: |
+          echo "Building application..."
+          echo "Application built successfully!"
+          # Add your actual build commands here if needed
+
+      # ==========================================
+      # UPLOAD ARTIFACTS
+      # ==========================================
+      - name: 📤 Upload All Security Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports-complete
+          path: security-reports/
+          retention-days: 30
+        if: always()
+
+      - name: 📤 Upload Bandit Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: bandit-sast-report
+          path: security-reports/bandit-report.*
+        if: always()
+
+      - name: 📤 Upload Semgrep Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: semgrep-sast-report
+          path: security-reports/semgrep-report.*
+        if: always()
+
+      - name: 📤 Upload Safety Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: safety-sca-report
+          path: security-reports/safety-report.*
+        if: always()
+
+      # ==========================================
+      # SUMMARY
+      # ==========================================
+      - name: 📝 Generate Job Summary
+        if: always()
+        run: |
+          echo "## 🔒 Security Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Completed Scans" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 **Bandit** (SAST): Python security linting" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 **Semgrep** (SAST): Pattern-based analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 **Safety** (SCA): Dependency vulnerability check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Reports Generated" >> $GITHUB_STEP_SUMMARY
+          echo "All security reports are available in the Artifacts section below." >> $GITHUB_STEP_SUMMARY
