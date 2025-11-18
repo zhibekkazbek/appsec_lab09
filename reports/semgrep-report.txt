@@ -1,0 +1,139 @@
+                    
+                    
+┌──────────────────┐
+│ 16 Code Findings │
+└──────────────────┘
+           
+    main.py
+   ❯❯❱ python.flask.security.audit.hardcoded-config.avoid_hardcoded_config_SECRET_KEY
+          Hardcoded variable `SECRET_KEY` detected. Use environment variables or config files instead
+          Details: https://sg.run/Ekde                                                               
+                                                                                                     
+            9┆ app.config['SECRET_KEY'] = 'super-secret-key-12345'
+   
+   ❯❯❱ python.flask.security.injection.tainted-sql-string.tainted-sql-string
+          Detected user input used to manually construct a SQL string. This is usually bad practice because 
+          manual construction could accidentally result in a SQL injection. An attacker could use a SQL     
+          injection to steal or modify contents of the database. Instead, use a parameterized query which is
+          available by default in most database engines. Alternatively, consider using an object-relational 
+          mapper (ORM) such as SQLAlchemy which will protect your queries.                                  
+          Details: https://sg.run/JxZj                                                                      
+                                                                                                            
+           29┆ query = "SELECT * FROM users WHERE username = '" + username + "'"
+   
+   ❯❯❱ python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+          Avoiding SQL string concatenation: untrusted input concatenated with raw SQL query can result in SQL
+          Injection. In order to execute raw query safely, prepared statement should be used. SQLAlchemy      
+          provides TextualSQL to easily used prepared statement with named parameters. For complex SQL        
+          composition, use SQL Expression Language or Schema Definition Language. In most cases, SQLAlchemy   
+          ORM will be a better option.                                                                        
+          Details: https://sg.run/2b1L                                                                        
+                                                                                                              
+           30┆ cursor.execute(query)
+   
+   ❯❯❱ python.django.security.injection.command.command-injection-os-system.command-injection-os-system
+          Request data detected in os.system. This could be vulnerable to a command injection and should be   
+          avoided. If this must be done, use the 'subprocess' module instead and pass the arguments as a list.
+          See https://owasp.org/www-community/attacks/Command_Injection for more information.                 
+          Details: https://sg.run/Gen2                                                                        
+                                                                                                              
+           36┆ cmd = request.args.get('cmd', 'whoami')
+           37┆ result = os.system(cmd)
+   
+   ❯❯❱ python.flask.security.injection.os-system-injection.os-system-injection
+          User data detected in os.system. This could be vulnerable to a command injection and should be      
+          avoided. If this must be done, use the 'subprocess' module instead and pass the arguments as a list.
+          Details: https://sg.run/4xzz                                                                        
+                                                                                                              
+           37┆ result = os.system(cmd)
+   
+   ❯❯❱ python.lang.security.dangerous-system-call.dangerous-system-call
+          Found user-controlled data used in a system call. This could allow a malicious actor to execute    
+          commands. Use the 'subprocess' module instead, which is easier to use without accidentally exposing
+          a command injection vulnerability.                                                                 
+          Details: https://sg.run/k0W7                                                                       
+                                                                                                             
+           37┆ result = os.system(cmd)
+   
+    ❯❱ python.flask.security.audit.directly-returned-format-string.directly-returned-format-string
+          Detected Flask route directly returning a formatted string. This is subject to cross-site scripting
+          if user input can reach the string. Consider using the template engine instead and rendering pages 
+          with 'render_template()'.                                                                          
+          Details: https://sg.run/Zv6o                                                                       
+                                                                                                             
+           38┆ return f'Command executed: {result}'
+   
+    ❯❱ python.django.security.injection.raw-html-format.raw-html-format
+          Detected user input flowing into a manually constructed HTML string. You may be accidentally       
+          bypassing secure methods of rendering HTML by manually constructing HTML and this could create a   
+          cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure
+          this is safe, check that the HTML is rendered safely. Otherwise, use templates                     
+          (`django.shortcuts.render`) which will safely render HTML instead.                                 
+          Details: https://sg.run/oYj1                                                                       
+                                                                                                             
+           44┆ template = '<h2>Search results for: ' + query + '</h2>'
+   
+    ❯❱ python.flask.security.injection.raw-html-concat.raw-html-format
+          Detected user input flowing into a manually constructed HTML string. You may be accidentally       
+          bypassing secure methods of rendering HTML by manually constructing HTML and this could create a   
+          cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure
+          this is safe, check that the HTML is rendered safely. Otherwise, use templates                     
+          (`flask.render_template`) which will safely render HTML instead.                                   
+          Details: https://sg.run/Pb7e                                                                       
+                                                                                                             
+           44┆ template = '<h2>Search results for: ' + query + '</h2>'
+   
+    ❯❱ python.flask.security.audit.render-template-string.render-template-string
+          Found a template created with string formatting. This is susceptible to server-side template
+          injection and cross-site scripting attacks.                                                 
+          Details: https://sg.run/8yjE                                                                
+                                                                                                      
+           45┆ return render_template_string(template)
+   
+   ❯❯❱ python.flask.security.injection.subprocess-injection.subprocess-injection
+          Detected user input entering a `subprocess` call unsafely. This could result in a command injection 
+          vulnerability. An attacker could use this vulnerability to execute arbitrary commands on the host,  
+          which allows them to download malware, scan sensitive data, or run any command they wish on the     
+          server. Do not let users choose the command to run. In general, prefer to use Python API versions of
+          system commands. If you must use subprocess, use a dictionary to allowlist a set of commands.       
+          Details: https://sg.run/5gW3                                                                        
+                                                                                                              
+           51┆ result = subprocess.call(f'ping -c 1 {host}', shell=True)
+   
+   ❯❯❱ python.lang.security.dangerous-subprocess-use.dangerous-subprocess-use
+          Detected subprocess function 'call' with user controlled data. A malicious actor could leverage this
+          to perform command injection. You may consider using 'shlex.escape()'.                              
+          Details: https://sg.run/NWxp                                                                        
+                                                                                                              
+           51┆ result = subprocess.call(f'ping -c 1 {host}', shell=True)
+   
+   ❯❯❱ python.lang.security.audit.subprocess-shell-true.subprocess-shell-true
+          Found 'subprocess' function 'call' with 'shell=True'. This is dangerous because this call will spawn
+          the command using a shell process. Doing so propagates current shell settings and variables, which  
+          makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.          
+          Details: https://sg.run/J92w                                                                        
+                                                                                                              
+           ▶▶┆ Autofix ▶ False
+           51┆ result = subprocess.call(f'ping -c 1 {host}', shell=True)
+   
+    ❯❱ python.flask.security.audit.directly-returned-format-string.directly-returned-format-string
+          Detected Flask route directly returning a formatted string. This is subject to cross-site scripting
+          if user input can reach the string. Consider using the template engine instead and rendering pages 
+          with 'render_template()'.                                                                          
+          Details: https://sg.run/Zv6o                                                                       
+                                                                                                             
+           52┆ return f'Ping result: {result}'
+   
+    ❯❱ python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host
+          Running flask app with host 0.0.0.0 could expose the server publicly.
+          Details: https://sg.run/eLby                                         
+                                                                               
+           56┆ app.run(debug=True, host='0.0.0.0', port=5000)
+   
+    ❯❱ python.flask.security.audit.debug-enabled.debug-enabled
+          Detected Flask app with debug=True. Do not deploy to production with this flag enabled as it will   
+          leak sensitive information. Instead, consider using Flask configuration variables or setting 'debug'
+          using system environment variables.                                                                 
+          Details: https://sg.run/dKrd                                                                        
+                                                                                                              
+           56┆ app.run(debug=True, host='0.0.0.0', port=5000)
